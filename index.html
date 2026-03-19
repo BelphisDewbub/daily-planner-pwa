@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#2d2d2d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Daily Planner" />
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Fraunces:wght@500&display=swap" rel="stylesheet" />
+  <title>Daily Planner</title>
+
+<style>
+/* ── Reset ─────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-text-size-adjust: 100%; }
+button { font: inherit; cursor: pointer; }
+input, select, textarea { font: inherit; }
+
+/* ── Tokens ────────────────────────────────────────────── */
+:root {
+  --bg:         #faf9f7;
+  --bg-card:    #ffffff;
+  --bg-subtle:  #f3f2ef;
+  --bg-toast:   #1e1e1e;
+  --ink:        #1a1a1a;
+  --ink-2:      #555;
+  --ink-3:      #999;
+  --border:     rgba(0,0,0,0.08);
+  --border-md:  rgba(0,0,0,0.14);
+  --accent:     #2d2d2d;
+  --accent-fg:  #ffffff;
+  --green:      #2d6a4f;
+  --green-bg:   #d8f3dc;
+  --amber:      #7b4f00;
+  --amber-bg:   #fff3cd;
+  --red:        #9b1c1c;
+  --red-bg:     #fde8e8;
+  --blue:       #1a4b8c;
+  --blue-bg:    #dbeafe;
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  18px;
+  --radius-xl:  24px;
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --font:       'Inter', system-ui, sans-serif;
+  --font-serif: 'Fraunces', Georgia, serif;
+  --safe-top:   env(safe-area-inset-top, 0px);
+  --safe-bot:   env(safe-area-inset-bottom, 0px);
+}
+
+/* ── Base ──────────────────────────────────────────────── */
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100dvh;
+  padding-bottom: calc(80px + var(--safe-bot));
+}
+
+/* ── Header ────────────────────────────────────────────── */
+.app-header {
+  background: var(--accent);
+  color: var(--accent-fg);
+  padding: calc(16px + var(--safe-top)) 20px 20px;
+}
+.app-header__greeting {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 500;
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+.app-header__date {
+  font-size: 13px;
+  opacity: 0.6;
+  font-weight: 400;
+}
+
+/* ── Notification banner ───────────────────────────────── */
+.notif-banner {
+  margin: 16px 16px 0;
+  background: var(--amber-bg);
+  border: 1px solid rgba(123,79,0,0.2);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--amber);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.notif-banner.granted { background: var(--green-bg); color: var(--green); }
+.notif-banner.denied { background: var(--red-bg); color: var(--red); }
+.notif-banner__icon { font-size: 18px; flex-shrink: 0; }
+.notif-banner__text { flex: 1; line-height: 1.4; }
+.notif-banner__btn {
+  background: var(--amber);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+.notif-banner.granted .notif-banner__btn { background: var(--green); }
+
+/* ── Stats row ─────────────────────────────────────────── */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 16px 16px 0;
+}
+.stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 14px 12px;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.stat-card__num {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.stat-card__lbl { font-size: 11px; color: var(--ink-3); font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ── Section ───────────────────────────────────────────── */
+.section { padding: 20px 16px 0; }
+.section__label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+/* ── Daily plan card ───────────────────────────────────── */
+.plan-card {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+}
+.plan-card__motto {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 500;
+  margin-bottom: 16px;
+  opacity: 0.9;
+}
+.plan-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.plan-item:last-child { border-bottom: none; }
+.plan-item__num {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.plan-item__title { flex: 1; font-size: 14px; font-weight: 400; }
+.plan-item__badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.badge--high { background: rgba(255,255,255,0.2); }
+.badge--medium { background: rgba(255,255,255,0.12); }
+.badge--low { background: rgba(255,255,255,0.07); }
+
+/* ── Task list ─────────────────────────────────────────── */
+.task-list { display: flex; flex-direction: column; gap: 6px; }
+.task-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: opacity 0.2s;
+}
+.task-card--done { opacity: 0.45; }
+.task-card--done .task-card__title { text-decoration: line-through; }
+.task-card--rec { border-left: 3px solid var(--blue); }
+.check-btn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border-md);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--green);
+  transition: all 0.15s;
+}
+.check-btn:hover { border-color: var(--green); background: var(--green-bg); }
+.check-btn--checked { background: var(--green-bg); border-color: var(--green); }
+.task-card__title { flex: 1; font-size: 14px; line-height: 1.4; }
+.task-card__badges { display: flex; gap: 5px; align-items: center; flex-shrink: 0; }
+.pill {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pill--high { background: var(--red-bg); color: var(--red); }
+.pill--medium { background: var(--amber-bg); color: var(--amber); }
+.pill--low { background: var(--green-bg); color: var(--green); }
+.pill--rec { background: var(--blue-bg); color: var(--blue); }
+.del-btn {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.del-btn:hover { color: var(--red); }
+
+/* ── Missed banner ─────────────────────────────────────── */
+.missed-card {
+  background: var(--amber-bg);
+  border: 1px solid rgba(123,79,0,0.2);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+}
+.missed-card__title { font-size: 13px; font-weight: 500; color: var(--amber); margin-bottom: 8px; }
+.missed-card__task { font-size: 14px; color: var(--ink); margin-bottom: 10px; }
+.missed-card__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.missed-card__actions button {
+  background: var(--bg-card);
+  border: 1px solid var(--border-md);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  transition: background 0.15s;
+}
+.missed-card__actions button:hover { background: var(--bg-subtle); }
+
+/* ── Add form ──────────────────────────────────────────── */
+.add-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+.form-row:last-child { margin-bottom: 0; }
+.form-row input, .form-row select {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-row input { flex: 1; }
+.form-row input:focus, .form-row select:focus { border-color: var(--accent); }
+.form-row select { width: 110px; flex-shrink: 0; }
+.form-submit {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.form-submit:hover { opacity: 0.85; }
+
+/* ── Days picker ───────────────────────────────────────── */
+.days-picker { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.day-btn {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 5px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: all 0.12s;
+}
+.day-btn--sel { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+
+/* ── Schedule times ────────────────────────────────────── */
+.times-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  box-shadow: var(--shadow-sm);
+}
+.time-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.time-row:last-child { border-bottom: none; }
+.time-row__icon { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
+.time-row__info { flex: 1; }
+.time-row__label { font-size: 13px; font-weight: 500; }
+.time-row__desc { font-size: 12px; color: var(--ink-3); margin-top: 1px; }
+.time-input {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  outline: none;
+  width: 90px;
+  text-align: center;
+}
+.time-input:focus { border-color: var(--accent); }
+
+/* ── Bottom nav ────────────────────────────────────────── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--bg-card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: var(--safe-bot);
+  box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+}
+.nav-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 10px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  color: var(--ink-3);
+  font-size: 10px;
+  font-weight: 500;
+  transition: color 0.15s;
+}
+.nav-btn--active { color: var(--accent); }
+.nav-btn__icon { font-size: 20px; line-height: 1; }
+
+/* ── Empty state ───────────────────────────────────────── */
+.empty {
+  text-align: center;
+  padding: 28px 16px;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+/* ── Toast ─────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: calc(90px + var(--safe-bot));
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--bg-toast);
+  color: #fff;
+  border-radius: 20px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 999;
+}
+.toast--show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Pages ─────────────────────────────────────────────── */
+.page { display: none; }
+.page--active { display: block; }
+
+/* ── Animations ────────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.section { animation: fadeUp 0.25s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .section { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Header ──────────────────────────────────────────── -->
+<header class="app-header">
+  <div class="app-header__greeting" id="greeting">Good morning</div>
+  <div class="app-header__date" id="header-date">Loading...</div>
+</header>
+
+<!-- ── Page: Today ──────────────────────────────────────── -->
+<div class="page page--active" id="page-today">
+  <div id="notif-area"></div>
+  <div id="missed-area"></div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-card__num" id="s-todo">0</div><div class="stat-card__lbl">To do</div></div>
+    <div class="stat-card"><div class="stat-card__num" id="s-done">0</div><div class="stat-card__lbl">Done</div></div>
+    <div class="stat-card"><div class="stat-card__num" id="s-rec">0</div><div class="stat-card__lbl">Recurring</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section__label">Today's focus</div>
+    <div class="plan-card" id="plan-card"><div class="empty">Add tasks to build your daily plan</div></div>
+  </div>
+</div>
+
+<!-- ── Page: Tasks ──────────────────────────────────────── -->
+<div class="page" id="page-tasks">
+  <div class="section">
+    <div class="section__label">All tasks</div>
+    <div class="task-list" id="task-list"><div class="empty">No tasks yet.</div></div>
+  </div>
+  <div class="section" style="padding-top:12px;">
+    <div class="section__label">Recurring tasks</div>
+    <div class="task-list" id="rec-list"><div class="empty">No recurring tasks.</div></div>
+  </div>
+</div>
+
+<!-- ── Page: Add ────────────────────────────────────────── -->
+<div class="page" id="page-add">
+  <div class="section">
+    <div class="section__label">One-time task</div>
+    <div class="add-form">
+      <div class="form-row">
+        <input type="text" id="task-input" placeholder="e.g. call the dentist" autocomplete="off" />
+        <select id="pri-sel">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <button class="form-submit" style="width:100%;" onclick="addTask()">Add task</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section__label">Recurring task</div>
+    <div class="add-form">
+      <div class="form-row">
+        <input type="text" id="rec-input" placeholder="e.g. wash the dishes" autocomplete="off" />
+        <select id="rec-pri">
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <select id="rec-type" style="flex:1;" onchange="updateRecUI()">
+          <option value="daily">Every day</option>
+          <option value="weekly">Weekly — pick days</option>
+          <option value="monthly">Monthly — pick date</option>
+        </select>
+      </div>
+      <div id="rec-weekly" style="display:none; margin-bottom:8px;">
+        <div class="days-picker" id="days-picker"></div>
+      </div>
+      <div id="rec-monthly" style="display:none;" class="form-row">
+        <input type="number" id="rec-dom" min="1" max="31" value="1" placeholder="Day of month" />
+      </div>
+      <div class="form-row">
+        <button class="form-submit" style="width:100%;" onclick="addRecurring()">Add recurring task</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Page: Settings ───────────────────────────────────── -->
+<div class="page" id="page-settings">
+  <div class="section">
+    <div class="section__label">Notification schedule</div>
+    <div class="times-card">
+      <div class="time-row">
+        <div class="time-row__icon">🌅</div>
+        <div class="time-row__info">
+          <div class="time-row__label">Morning briefing</div>
+          <div class="time-row__desc">Your daily plan for today</div>
+        </div>
+        <input type="time" class="time-input" id="morning-time" value="07:30" onchange="saveSettings()" />
+      </div>
+      <div class="time-row">
+        <div class="time-row__icon">🌇</div>
+        <div class="time-row__info">
+          <div class="time-row__label">Evening wind-down</div>
+          <div class="time-row__desc">Gentle reminder for open tasks</div>
+        </div>
+        <input type="time" class="time-input" id="evening-time" value="17:00" onchange="saveSettings()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section__label">Notifications</div>
+    <div class="times-card">
+      <div class="time-row">
+        <div class="time-row__icon" id="notif-icon">🔔</div>
+        <div class="time-row__info">
+          <div class="time-row__label">Push notifications</div>
+          <div class="time-row__desc" id="notif-status-text">Tap to enable</div>
+        </div>
+        <button class="form-submit" id="notif-btn" onclick="requestNotifPermission()" style="padding:8px 14px;font-size:13px;">Enable</button>
+      </div>
+      <div class="time-row">
+        <div class="time-row__icon">🧪</div>
+        <div class="time-row__info">
+          <div class="time-row__label">Test notification</div>
+          <div class="time-row__desc">Send a preview right now</div>
+        </div>
+        <button class="form-submit" onclick="testNotification()" style="padding:8px 14px;font-size:13px;">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section__label">Install app</div>
+    <div class="times-card">
+      <div class="time-row">
+        <div class="time-row__icon">📲</div>
+        <div class="time-row__info">
+          <div class="time-row__label">Add to home screen</div>
+          <div class="time-row__desc" id="install-desc">For the best experience and notifications, install as an app.</div>
+        </div>
+        <button class="form-submit" id="install-btn" onclick="installPWA()" style="padding:8px 14px;font-size:13px;">Install</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Bottom Nav ───────────────────────────────────────── -->
+<nav class="bottom-nav">
+  <button class="nav-btn nav-btn--active" onclick="switchPage('today',this)" id="nav-today">
+    <span class="nav-btn__icon">☀️</span>Today
+  </button>
+  <button class="nav-btn" onclick="switchPage('tasks',this)">
+    <span class="nav-btn__icon">📋</span>Tasks
+  </button>
+  <button class="nav-btn" onclick="switchPage('add',this)">
+    <span class="nav-btn__icon">➕</span>Add
+  </button>
+  <button class="nav-btn" onclick="switchPage('settings',this)">
+    <span class="nav-btn__icon">⚙️</span>Settings
+  </button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Constants ───────────────────────────────────────────
+const KEY = 'daily-planner:tasks';
+const SETTINGS_KEY = 'daily-planner:settings';
+const DAYS = ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'];
+const DAY_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+const MOTTOS = [
+  "Let's make today count!",
+  "You've got this — here's your focus:",
+  "Small steps, big wins:",
+  "One task at a time — here we go:"
+];
+
+// ── State ───────────────────────────────────────────────
+let data = { tasks: [], recurringTemplates: [] };
+let settings = { morningTime: '07:30', eveningTime: '17:00' };
+let selDays = new Set();
+let deferredInstall = null;
+let scheduleInterval = null;
+
+// ── SW Registration ─────────────────────────────────────
+async function registerSW() {
+  if (!('serviceWorker' in navigator)) return;
+  try {
+    await navigator.serviceWorker.register('/sw.js');
+  } catch(e) { console.warn('SW registration failed', e); }
+}
+
+// ── Storage ─────────────────────────────────────────────
+async function loadData() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) data = JSON.parse(raw);
+  } catch(e) {}
+  data.tasks = data.tasks || [];
+  data.recurringTemplates = data.recurringTemplates || [];
+  try {
+    const s = localStorage.getItem(SETTINGS_KEY);
+    if (s) settings = { ...settings, ...JSON.parse(s) };
+  } catch(e) {}
+}
+
+function saveData() {
+  localStorage.setItem(KEY, JSON.stringify(data));
+}
+
+function saveSettings() {
+  settings.morningTime = document.getElementById('morning-time').value;
+  settings.eveningTime = document.getElementById('evening-time').value;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  toast('Schedule saved!');
+  startScheduler();
+}
+
+// ── Scheduler ───────────────────────────────────────────
+function startScheduler() {
+  if (scheduleInterval) clearInterval(scheduleInterval);
+  scheduleInterval = setInterval(() => {
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.controller.postMessage({
+        type: 'SCHEDULE_CHECK',
+        payload: { tasks: data.tasks, recurringTemplates: data.recurringTemplates, now: new Date().toISOString(), morningTime: settings.morningTime, eveningTime: settings.eveningTime }
+      });
+    }
+  }, 60000);
+}
+
+// ── Notification permission ─────────────────────────────
+async function requestNotifPermission() {
+  if (!('Notification' in window)) { toast('Notifications not supported in this browser'); return; }
+  const perm = await Notification.requestPermission();
+  updateNotifUI(perm);
+  if (perm === 'granted') { toast('Notifications enabled! You\'ll hear from me at ' + settings.morningTime + ' and ' + settings.eveningTime); startScheduler(); }
+}
+
+function updateNotifUI(perm) {
+  const icon = document.getElementById('notif-icon');
+  const text = document.getElementById('notif-status-text');
+  const btn  = document.getElementById('notif-btn');
+  if (perm === 'granted') { icon.textContent = '✅'; text.textContent = 'Active — you\'ll be notified'; btn.textContent = 'Enabled'; btn.disabled = true; btn.style.opacity = '0.5'; }
+  else if (perm === 'denied') { icon.textContent = '🚫'; text.textContent = 'Blocked — enable in browser settings'; btn.textContent = 'Blocked'; btn.disabled = true; btn.style.opacity = '0.5'; }
+  else { icon.textContent = '🔔'; text.textContent = 'Tap to enable'; btn.textContent = 'Enable'; btn.disabled = false; btn.style.opacity = '1'; }
+}
+
+async function testNotification() {
+  if (Notification.permission !== 'granted') { toast('Enable notifications first!'); return; }
+  const sw = await navigator.serviceWorker.ready;
+  const open = data.tasks.filter(t => !t.completed);
+  const recToday = getTodayRec();
+  const items = [...recToday.map(r => '🔁 ' + r.title), ...open.map(t => t.title)];
+  sw.showNotification(items.length ? 'Here\'s your test briefing 🌅' : 'All clear — nothing on your list!', {
+    body: items.length ? items.slice(0,5).map((t,i) => `${i+1}. ${t}`).join('\n') : 'Add some tasks to see them here.',
+    icon: '/icon-192.png',
+    tag: 'test'
+  });
+  toast('Test notification sent!');
+}
+
+// ── PWA Install ─────────────────────────────────────────
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('install-btn').textContent = 'Install';
+  document.getElementById('install-desc').textContent = 'Tap to install as a native-like app on your device.';
+});
+
+async function installPWA() {
+  if (!deferredInstall) { toast('Open this page in your mobile browser, then use "Add to Home Screen"'); return; }
+  deferredInstall.prompt();
+  const { outcome } = await deferredInstall.userChoice;
+  if (outcome === 'accepted') { toast('App installed! Open it from your home screen.'); deferredInstall = null; }
+}
+
+// ── Helpers ─────────────────────────────────────────────
+function todayName() { return DAYS[new Date().getDay() === 0 ? 6 : new Date().getDay() - 1]; }
+function todayISO() { return new Date().toISOString().slice(0,10); }
+function sameDay(a) { return a && a.slice(0,10) === todayISO(); }
+
+function getTodayRec() {
+  return (data.recurringTemplates || []).filter(r => {
+    const due = r.schedule.type === 'daily' ||
+      (r.schedule.type === 'weekly' && r.schedule.days.includes(todayName())) ||
+      (r.schedule.type === 'monthly' && new Date().getDate() === r.schedule.dayOfMonth);
+    return due && !sameDay(r.lastCompleted);
+  });
+}
+
+function getMissed() {
+  const today = new Date(); today.setHours(0,0,0,0);
+  return (data.recurringTemplates || []).filter(r => {
+    if (r.schedule.type === 'weekly') {
+      const ref = r.lastCompleted || r.lastDue;
+      if (!ref) return false;
+      const d = new Date(ref.slice(0,10)); d.setHours(0,0,0,0);
+      return (today - d) / 86400000 > 7;
+    }
+    if (r.schedule.type === 'daily') {
+      const ref = r.lastCompleted;
+      if (!ref) return false;
+      const d = new Date(ref.slice(0,10)); d.setHours(0,0,0,0);
+      return (today - d) / 86400000 > 1 && !getTodayRec().find(x => x.id === r.id);
+    }
+    return false;
+  }).filter(r => !getTodayRec().find(x => x.id === r.id));
+}
+
+function score(t) {
+  const w = { high:3, medium:2, low:1 };
+  const days = (Date.now() - new Date(t.added || t.lastDue || Date.now()).getTime()) / 86400000;
+  return (w[t.priority] || 1) + days * 0.1;
+}
+
+function genId(prefix, arr) {
+  const max = (arr || []).reduce((m, x) => Math.max(m, parseInt((x.id||'').replace(prefix,'')) || 0), 0);
+  return prefix + (max + 1);
+}
+
+function scheduleLabel(r) {
+  if (r.schedule.type === 'daily') return 'Every day';
+  if (r.schedule.type === 'weekly') return 'Every ' + r.schedule.days.map(d => d[0].toUpperCase() + d.slice(1,3)).join(', ');
+  const n = r.schedule.dayOfMonth;
+  return 'Monthly on the ' + n + (n===1?'st':n===2?'nd':n===3?'rd':'th');
+}
+
+// ── Render ───────────────────────────────────────────────
+function render() {
+  const incomplete = data.tasks.filter(t => !t.completed);
+  const done = data.tasks.filter(t => t.completed && sameDay(t.completedOn));
+  const recToday = getTodayRec();
+  const missed = getMissed().slice(0,1);
+
+  // Stats
+  document.getElementById('s-todo').textContent = incomplete.length + recToday.length;
+  document.getElementById('s-done').textContent = done.length + (data.recurringTemplates||[]).filter(r=>sameDay(r.lastCompleted)).length;
+  document.getElementById('s-rec').textContent = (data.recurringTemplates||[]).length;
+
+  // Greeting
+  const h = new Date().getHours();
+  document.getElementById('greeting').textContent = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  document.getElementById('header-date').textContent = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+  // Missed
+  const missedArea = document.getElementById('missed-area');
+  if (missed.length) {
+    const r = missed[0];
+    missedArea.innerHTML = `<div class="section"><div class="missed-card">
+      <div class="missed-card__title">⚠️ Missed recurring task</div>
+      <div class="missed-card__task">"${r.title}" (${scheduleLabel(r)})</div>
+      <div class="missed-card__actions">
+        <button onclick="handleMissed('${r.id}','done')">Mark done</button>
+        <button onclick="handleMissed('${r.id}','skip')">Skip this time</button>
+      </div>
+    </div></div>`;
+  } else { missedArea.innerHTML = ''; }
+
+  // Daily plan
+  const planItems = [
+    ...recToday.map(r => ({ title: '🔁 ' + r.title, priority: r.priority, isRec: true, s: 10 + score(r) })),
+    ...incomplete.map(t => ({ ...t, s: score(t) }))
+  ].sort((a,b) => b.s - a.s).slice(0,5);
+
+  const planCard = document.getElementById('plan-card');
+  if (!planItems.length) {
+    planCard.innerHTML = '<div class="empty" style="color:rgba(255,255,255,0.5);">Add tasks to get your daily plan</div>';
+  } else {
+    planCard.innerHTML = `<div class="plan-card__motto">${MOTTOS[new Date().getDay() % MOTTOS.length]}</div>` +
+      planItems.map((t,i) => `<div class="plan-item">
+        <div class="plan-item__num">${i+1}</div>
+        <div class="plan-item__title">${t.title}</div>
+        <span class="plan-item__badge badge--${t.priority}">${t.priority}</span>
+      </div>`).join('');
+  }
+
+  // All tasks
+  const taskList = document.getElementById('task-list');
+  const sorted = [...data.tasks].sort((a,b) => { if(a.completed!==b.completed) return a.completed?1:-1; return score(b)-score(a); });
+  taskList.innerHTML = sorted.length ? sorted.map(t => `
+    <div class="task-card ${t.completed?'task-card--done':''}">
+      <button class="check-btn ${t.completed?'check-btn--checked':''}" onclick="toggleTask('${t.id}')">${t.completed?'✓':''}</button>
+      <span class="task-card__title">${t.title}</span>
+      <div class="task-card__badges">
+        <span class="pill pill--${t.priority}">${t.priority}</span>
+        <button class="del-btn" onclick="removeTask('${t.id}')">×</button>
+      </div>
+    </div>`).join('') : '<div class="empty">No tasks yet — add some!</div>';
+
+  // Recurring list
+  const recList = document.getElementById('rec-list');
+  recList.innerHTML = (data.recurringTemplates||[]).length ? data.recurringTemplates.map(r => {
+    const doneToday = sameDay(r.lastCompleted);
+    return `<div class="task-card ${doneToday?'task-card--done':''} task-card--rec">
+      <button class="check-btn ${doneToday?'check-btn--checked':''}" onclick="completeRec('${r.id}')">${doneToday?'✓':''}</button>
+      <span class="task-card__title">${r.title}</span>
+      <div class="task-card__badges">
+        <span class="pill pill--rec">${scheduleLabel(r)}</span>
+        <button class="del-btn" onclick="removeRec('${r.id}')">×</button>
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">No recurring tasks yet.</div>';
+
+  // Notif banner on Today tab
+  const notifArea = document.getElementById('notif-area');
+  const perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  if (perm === 'default') {
+    notifArea.innerHTML = `<div class="notif-banner" style="margin:16px 16px 0;">
+      <span class="notif-banner__icon">🔔</span>
+      <span class="notif-banner__text">Enable notifications to get your 7:30am briefing and 5pm reminder.</span>
+      <button class="notif-banner__btn" onclick="requestNotifPermission()">Enable</button>
+    </div>`;
+  } else if (perm === 'granted') {
+    notifArea.innerHTML = '';
+  } else {
+    notifArea.innerHTML = `<div class="notif-banner denied" style="margin:16px 16px 0;">
+      <span class="notif-banner__icon">🚫</span>
+      <span class="notif-banner__text">Notifications blocked. Enable them in your browser/phone settings.</span>
+    </div>`;
+  }
+
+  updateNotifUI(perm);
+}
+
+// ── Actions ──────────────────────────────────────────────
+function addTask() {
+  const title = document.getElementById('task-input').value.trim();
+  if (!title) { toast('Enter a task name first!'); return; }
+  const priority = document.getElementById('pri-sel').value;
+  data.tasks.push({ id: genId('t', data.tasks), title, priority, added: new Date().toISOString(), completed: false, completedOn: null });
+  document.getElementById('task-input').value = '';
+  saveData(); render(); toast('Task added!'); switchPage('today', document.getElementById('nav-today'));
+}
+
+function addRecurring() {
+  const title = document.getElementById('rec-input').value.trim();
+  if (!title) { toast('Enter a task name first!'); return; }
+  const type = document.getElementById('rec-type').value;
+  const priority = document.getElementById('rec-pri').value;
+  const days = type === 'weekly' ? [...selDays] : [];
+  if (type === 'weekly' && !days.length) { toast('Pick at least one day!'); return; }
+  const dayOfMonth = type === 'monthly' ? parseInt(document.getElementById('rec-dom').value) : null;
+  data.recurringTemplates = data.recurringTemplates || [];
+  data.recurringTemplates.push({ id: genId('r', data.recurringTemplates), title, priority, schedule:{ type, days, dayOfMonth }, lastCompleted: null, lastDue: todayISO(), missedOn: null });
+  document.getElementById('rec-input').value = '';
+  selDays.clear();
+  document.querySelectorAll('.day-btn').forEach(b => b.classList.remove('day-btn--sel'));
+  saveData(); render(); toast('Recurring task added!'); switchPage('today', document.getElementById('nav-today'));
+}
+
+function toggleTask(id) {
+  const t = data.tasks.find(x => x.id === id); if (!t) return;
+  t.completed = !t.completed; t.completedOn = t.completed ? new Date().toISOString() : null;
+  saveData(); render(); if (t.completed) toast('One down — crushing it! 🎉');
+}
+
+function removeTask(id) {
+  data.tasks = data.tasks.filter(x => x.id !== id);
+  saveData(); render(); toast('Task removed.');
+}
+
+function completeRec(id) {
+  const r = data.recurringTemplates.find(x => x.id === id); if (!r) return;
+  const wasDone = sameDay(r.lastCompleted);
+  r.lastCompleted = wasDone ? null : new Date().toISOString();
+  saveData(); render(); if (!wasDone) toast('That\'s how it\'s done! 🎉');
+}
+
+function removeRec(id) {
+  data.recurringTemplates = data.recurringTemplates.filter(x => x.id !== id);
+  saveData(); render(); toast('Recurring task removed.');
+}
+
+function handleMissed(id, action) {
+  const r = data.recurringTemplates.find(x => x.id === id); if (!r) return;
+  if (action === 'done') { r.lastCompleted = new Date().toISOString(); toast('Marked as done!'); }
+  else { toast('Skipped!'); }
+  r.missedOn = null;
+  saveData(); render();
+}
+
+// ── UI helpers ───────────────────────────────────────────
+function switchPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('page--active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('nav-btn--active'));
+  document.getElementById('page-' + name).classList.add('page--active');
+  btn.classList.add('nav-btn--active');
+}
+
+function updateRecUI() {
+  const type = document.getElementById('rec-type').value;
+  document.getElementById('rec-weekly').style.display = type === 'weekly' ? 'block' : 'none';
+  document.getElementById('rec-monthly').style.display = type === 'monthly' ? 'flex' : 'none';
+}
+
+function buildDaysPicker() {
+  const g = document.getElementById('days-picker');
+  g.innerHTML = DAYS.map((d,i) => `<button class="day-btn" onclick="toggleDay('${d}',this)">${DAY_SHORT[i]}</button>`).join('');
+}
+
+function toggleDay(d, el) {
+  selDays.has(d) ? (selDays.delete(d), el.classList.remove('day-btn--sel')) : (selDays.add(d), el.classList.add('day-btn--sel'));
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('toast--show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('toast--show'), 2400);
+}
+
+// ── Keyboard shortcuts ───────────────────────────────────
+document.getElementById('task-input').addEventListener('keydown', e => { if (e.key === 'Enter') addTask(); });
+document.getElementById('rec-input').addEventListener('keydown', e => { if (e.key === 'Enter') addRecurring(); });
+
+// ── Init ─────────────────────────────────────────────────
+(async () => {
+  await registerSW();
+  await loadData();
+  buildDaysPicker();
+  updateRecUI();
+  document.getElementById('morning-time').value = settings.morningTime;
+  document.getElementById('evening-time').value = settings.eveningTime;
+  render();
+  if ('Notification' in window && Notification.permission === 'granted') startScheduler();
+})();
+</script>
+</body>
+</html>
